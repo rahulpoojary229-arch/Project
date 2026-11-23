@@ -11,6 +11,8 @@ out/
 .next/
 .cache/
 *.tsbuildinfo
+runtime-data/
+*.tmp
 
 # OS & Editor files
 .DS_Store
