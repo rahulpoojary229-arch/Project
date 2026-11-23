@@ -1,21 +1,15 @@
 import { Router } from 'express';
 import { QueueEngine } from '../services/queueEngine.js';
 import { StorageService } from '../services/storage.js';
+import { queueSubmissionLimiter, validateQueueRequestInput, maskStudentName } from '../middleware/security.js';
 
 export const queueRouter = Router();
 const queueEngine = QueueEngine.getInstance();
 const storage = StorageService.getInstance();
 
-// POST /api/queue/request - submit access request & get token
-queueRouter.post('/request', async (req, res) => {
+// POST /api/queue/request - submit access request & get token (Protected with Rate Limiter & Input Validator)
+queueRouter.post('/request', queueSubmissionLimiter, validateQueueRequestInput, async (req, res) => {
   const { registrationNumber, labId, purpose, requestedDurationMinutes, requestDate } = req.body;
-
-  if (!registrationNumber || !labId || !purpose || !requestedDurationMinutes) {
-    return res.status(400).json({
-      success: false,
-      error: 'Missing required fields: registrationNumber, labId, purpose, and requestedDurationMinutes are mandatory.'
-    });
-  }
 
   const result = await queueEngine.submitAccessRequest({
     registrationNumber,
@@ -48,9 +42,18 @@ queueRouter.get('/token/:id', (req, res) => {
     remainingCallSeconds = Math.max(0, Math.round((standing.token.callExpiryTimestamp - now) / 1000));
   }
 
+  // Clone token and privacy-mask name for public display
+  const sanitizedToken = {
+    ...standing.token,
+    studentName: maskStudentName(standing.token.studentName)
+  };
+
   res.json({
     success: true,
-    standing,
+    standing: {
+      ...standing,
+      token: sanitizedToken
+    },
     laboratory: lab ? { id: lab.id, name: lab.name, location: `${lab.building}, ${lab.roomNumber}` } : null,
     serverTime: now,
     remainingCallSeconds

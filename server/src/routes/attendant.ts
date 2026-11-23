@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { QueueEngine } from '../services/queueEngine.js';
 import { StorageService } from '../services/storage.js';
+import { staffAuthGuard } from '../middleware/security.js';
 
 export const attendantRouter = Router();
 const queueEngine = QueueEngine.getInstance();
@@ -93,8 +94,8 @@ attendantRouter.get('/lab/:labId/stats', (req, res) => {
   });
 });
 
-// POST /api/attendant/token/:id/call - call next student
-attendantRouter.post('/token/:id/call', async (req, res) => {
+// All mutating attendant desk endpoints are guarded by staffAuthGuard:
+attendantRouter.post('/token/:id/call', staffAuthGuard, async (req, res) => {
   const result = await queueEngine.callStudent(req.params.id);
   if (!result.success) {
     return res.status(400).json(result);
@@ -102,8 +103,7 @@ attendantRouter.post('/token/:id/call', async (req, res) => {
   res.json(result);
 });
 
-// POST /api/attendant/token/:id/arrived - mark arrived
-attendantRouter.post('/token/:id/arrived', async (req, res) => {
+attendantRouter.post('/token/:id/arrived', staffAuthGuard, async (req, res) => {
   const result = await queueEngine.confirmArrival(req.params.id);
   if (!result.success) {
     return res.status(400).json(result);
@@ -111,8 +111,7 @@ attendantRouter.post('/token/:id/arrived', async (req, res) => {
   res.json(result);
 });
 
-// POST /api/attendant/token/:id/start-session - start session
-attendantRouter.post('/token/:id/start-session', async (req, res) => {
+attendantRouter.post('/token/:id/start-session', staffAuthGuard, async (req, res) => {
   const result = await queueEngine.startSession(req.params.id);
   if (!result.success) {
     return res.status(400).json(result);
@@ -120,8 +119,7 @@ attendantRouter.post('/token/:id/start-session', async (req, res) => {
   res.json(result);
 });
 
-// POST /api/attendant/token/:id/end-session - end session
-attendantRouter.post('/token/:id/end-session', async (req, res) => {
+attendantRouter.post('/token/:id/end-session', staffAuthGuard, async (req, res) => {
   const result = await queueEngine.endSession(req.params.id);
   if (!result.success) {
     return res.status(400).json(result);
@@ -129,8 +127,7 @@ attendantRouter.post('/token/:id/end-session', async (req, res) => {
   res.json(result);
 });
 
-// POST /api/attendant/token/:id/expire - manual expire / override
-attendantRouter.post('/token/:id/expire', async (req, res) => {
+attendantRouter.post('/token/:id/expire', staffAuthGuard, async (req, res) => {
   const { reason } = req.body;
   const result = await queueEngine.expireToken(req.params.id, reason);
   if (!result.success) {
@@ -139,8 +136,7 @@ attendantRouter.post('/token/:id/expire', async (req, res) => {
   res.json(result);
 });
 
-// POST /api/attendant/lab/:labId/close-day - close operating day & trigger carryover
-attendantRouter.post('/lab/:labId/close-day', async (req, res) => {
+attendantRouter.post('/lab/:labId/close-day', staffAuthGuard, async (req, res) => {
   const { currentDate } = req.body;
   try {
     const result = await queueEngine.closeOperatingDay(req.params.labId, currentDate);

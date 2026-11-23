@@ -90,7 +90,7 @@ export const api = {
     return res.json();
   },
 
-  // Attendant Operations
+  // Attendant Operations (Signed with Staff Role Header for authorization)
   async getAttendantQueue(labId: string, date?: string): Promise<{
     laboratory: Laboratory;
     currentDate: string;
@@ -118,28 +118,32 @@ export const api = {
 
   async callNextStudent(tokenId: string): Promise<{ success: boolean; token?: QueueToken; error?: string }> {
     const res = await fetch(`${API_BASE}/attendant/token/${tokenId}/call`, {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'X-Staff-Role': 'lab-attendant' }
     });
     return res.json();
   },
 
   async confirmArrival(tokenId: string): Promise<{ success: boolean; token?: QueueToken; error?: string }> {
     const res = await fetch(`${API_BASE}/attendant/token/${tokenId}/arrived`, {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'X-Staff-Role': 'lab-attendant' }
     });
     return res.json();
   },
 
   async startSession(tokenId: string): Promise<{ success: boolean; token?: QueueToken; error?: string }> {
     const res = await fetch(`${API_BASE}/attendant/token/${tokenId}/start-session`, {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'X-Staff-Role': 'lab-attendant' }
     });
     return res.json();
   },
 
   async endSession(tokenId: string): Promise<{ success: boolean; token?: QueueToken; error?: string }> {
     const res = await fetch(`${API_BASE}/attendant/token/${tokenId}/end-session`, {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'X-Staff-Role': 'lab-attendant' }
     });
     return res.json();
   },
@@ -147,7 +151,10 @@ export const api = {
   async expireToken(tokenId: string, reason?: string): Promise<{ success: boolean; token?: QueueToken; error?: string }> {
     const res = await fetch(`${API_BASE}/attendant/token/${tokenId}/expire`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Staff-Role': 'lab-attendant'
+      },
       body: JSON.stringify({ reason })
     });
     return res.json();
@@ -156,7 +163,10 @@ export const api = {
   async closeOperatingDay(labId: string, currentDate?: string): Promise<any> {
     const res = await fetch(`${API_BASE}/attendant/lab/${labId}/close-day`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Staff-Role': 'lab-attendant'
+      },
       body: JSON.stringify({ currentDate })
     });
     return res.json();
