@@ -7,14 +7,16 @@ const assistantService = new AiAssistantService();
 
 // POST /api/assistant/ask - Ask LabLink question (Rate Limited & Sanitized)
 assistantRouter.post('/ask', aiAssistantLimiter, (req, res) => {
-  const { question } = req.body;
+  const { question } = req.body as { question?: unknown };
   if (!question || typeof question !== 'string') {
-    return res.status(400).json({ success: false, error: 'Question is required.' });
+    res.status(400).json({ success: false, error: 'Question is required.' });
+    return;
   }
 
   const cleanQuestion = sanitizeString(question);
   if (cleanQuestion.length > 300) {
-    return res.status(400).json({ success: false, error: 'Question cannot exceed 300 characters.' });
+    res.status(400).json({ success: false, error: 'Question cannot exceed 300 characters.' });
+    return;
   }
 
   const response = assistantService.ask(cleanQuestion);

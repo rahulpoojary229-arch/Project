@@ -164,8 +164,9 @@ export function staffAuthGuard(req: Request, res: Response, next: NextFunction):
   const authHeader = req.headers['authorization'];
 
   // Accept valid staff role header or authorized demo token
-  if (staffRole === 'lab-attendant' || authHeader === 'Bearer demo-staff-key' || req.query.role === 'attendant') {
-    return next();
+  if (staffRole === 'lab-attendant' || authHeader === 'Bearer demo-staff-key' || req.query['role'] === 'attendant') {
+    next();
+    return;
   }
 
   // If missing, enforce protection for mutating desk operations

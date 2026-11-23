@@ -96,56 +96,68 @@ attendantRouter.get('/lab/:labId/stats', (req, res) => {
 
 // All mutating attendant desk endpoints are guarded by staffAuthGuard:
 attendantRouter.post('/token/:id/call', staffAuthGuard, async (req, res) => {
-  const result = await queueEngine.callStudent(req.params.id);
+  const tokenId = String(req.params.id);
+  const result = await queueEngine.callStudent(tokenId);
   if (!result.success) {
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
   res.json(result);
 });
 
 attendantRouter.post('/token/:id/arrived', staffAuthGuard, async (req, res) => {
-  const result = await queueEngine.confirmArrival(req.params.id);
+  const tokenId = String(req.params.id);
+  const result = await queueEngine.confirmArrival(tokenId);
   if (!result.success) {
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
   res.json(result);
 });
 
 attendantRouter.post('/token/:id/start-session', staffAuthGuard, async (req, res) => {
-  const result = await queueEngine.startSession(req.params.id);
+  const tokenId = String(req.params.id);
+  const result = await queueEngine.startSession(tokenId);
   if (!result.success) {
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
   res.json(result);
 });
 
 attendantRouter.post('/token/:id/end-session', staffAuthGuard, async (req, res) => {
-  const result = await queueEngine.endSession(req.params.id);
+  const tokenId = String(req.params.id);
+  const result = await queueEngine.endSession(tokenId);
   if (!result.success) {
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
   res.json(result);
 });
 
 attendantRouter.post('/token/:id/expire', staffAuthGuard, async (req, res) => {
-  const { reason } = req.body;
-  const result = await queueEngine.expireToken(req.params.id, reason);
+  const tokenId = String(req.params.id);
+  const { reason } = req.body as { reason?: string };
+  const result = await queueEngine.expireToken(tokenId, reason);
   if (!result.success) {
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
   res.json(result);
 });
 
 attendantRouter.post('/lab/:labId/close-day', staffAuthGuard, async (req, res) => {
-  const { currentDate } = req.body;
+  const labId = String(req.params.labId);
+  const { currentDate } = req.body as { currentDate?: string };
   try {
-    const result = await queueEngine.closeOperatingDay(req.params.labId, currentDate);
+    const result = await queueEngine.closeOperatingDay(labId, currentDate);
     res.json({
       success: true,
       message: `Operating day closed. ${result.carriedOverCount} unserved requests carried forward to ${result.nextOperatingDate} with fresh #01 token numbering.`,
       result
     });
-  } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+    res.status(400).json({ success: false, error: message });
   }
 });

@@ -8,29 +8,43 @@ const queueEngine = QueueEngine.getInstance();
 const storage = StorageService.getInstance();
 
 // POST /api/queue/request - submit access request & get token (Protected with Rate Limiter & Input Validator)
-queueRouter.post('/request', queueSubmissionLimiter, validateQueueRequestInput, async (req, res) => {
-  const { registrationNumber, labId, purpose, requestedDurationMinutes, requestDate } = req.body;
+queueRouter.post('/request', queueSubmissionLimiter, validateQueueRequestInput, async (req, res, next) => {
+  try {
+    const { registrationNumber, labId, purpose, requestedDurationMinutes, requestDate } =
+      req.body as {
+        registrationNumber: string;
+        labId: string;
+        purpose: string;
+        requestedDurationMinutes: number;
+        requestDate?: string;
+      };
 
-  const result = await queueEngine.submitAccessRequest({
-    registrationNumber,
-    labId,
-    purpose,
-    requestedDurationMinutes: Number(requestedDurationMinutes),
-    requestDate
-  });
+    const result = await queueEngine.submitAccessRequest({
+      registrationNumber,
+      labId,
+      purpose,
+      requestedDurationMinutes: Number(requestedDurationMinutes),
+      requestDate
+    });
 
-  if (!result.success) {
-    return res.status(400).json(result);
+    if (!result.success) {
+      res.status(400).json(result);
+      return;
+    }
+
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
   }
-
-  res.status(201).json(result);
 });
 
 // GET /api/queue/token/:id - get status, countdown, and queue standing for a token
 queueRouter.get('/token/:id', (req, res) => {
-  const standing = queueEngine.getQueueStanding(req.params.id);
+  const tokenId = String(req.params.id);
+  const standing = queueEngine.getQueueStanding(tokenId);
   if (!standing) {
-    return res.status(404).json({ success: false, error: 'Token not found.' });
+    res.status(404).json({ success: false, error: 'Token not found.' });
+    return;
   }
 
   const lab = storage.getLabById(standing.token.labId);
@@ -63,7 +77,7 @@ queueRouter.get('/token/:id', (req, res) => {
 // GET /api/queue/student/:regNo - get all tokens associated with a registration number
 queueRouter.get('/student/:regNo', (req, res) => {
   queueEngine.checkAndExpireNoShows();
-  const regNoUpper = req.params.regNo.trim().toUpperCase();
+  const regNoUpper = String(req.params.regNo).trim().toUpperCase();
   const allTokens = storage.getAllTokens();
 
   const studentTokens = allTokens
@@ -84,11 +98,17 @@ queueRouter.get('/student/:regNo', (req, res) => {
 });
 
 // POST /api/queue/token/:id/cancel - cancel an active request
-queueRouter.post('/token/:id/cancel', async (req, res) => {
-  const { reason } = req.body;
-  const result = await queueEngine.cancelToken(req.params.id, reason);
-  if (!result.success) {
-    return res.status(400).json(result);
+queueRouter.post('/token/:id/cancel', async (req, res, next) => {
+  try {
+    const tokenId = String(req.params.id);
+    const { reason } = req.body as { reason?: string };
+    const result = await queueEngine.cancelToken(tokenId, reason);
+    if (!result.success) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    next(err);
   }
-  res.json(result);
 });

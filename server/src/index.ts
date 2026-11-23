@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -75,6 +75,17 @@ const server = app.listen(PORT, () => {
   console.log(`  Health Check: http://localhost:${PORT}/api/health`);
   console.log(`  Default Timezone: Asia/Kolkata`);
   console.log(`=======================================================`);
+});
+
+// Global error handler — catches unhandled errors from async route handlers
+// Must be registered AFTER all routes with the 4-argument signature
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[LabLink Error]', err.stack || err.message);
+  res.status(500).json({
+    success: false,
+    error: 'An internal server error occurred. Please try again.'
+  });
 });
 
 export { app, server };
